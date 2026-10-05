@@ -17,7 +17,7 @@ Hacer un análisis exploratorio de datos (EDA) sobre un dataset de reservas de v
 
 - **Archivo:** `customer_booking.csv`, con reservas de vuelos hechas por clientes de una aerolínea. Para cada reserva trae el detalle del viaje, los adicionales solicitados, el costo y si se completó.
 - **Fuente:** dataset público descargado de internet. <!-- TODO: completar con el link de origen y aclarar de dónde sale la columna booking_cost -->
-- **Tamaño:** 50.000 filas × 15 columnas (49.580 filas después de la limpieza).
+- **Tamaño:** 50.000 filas × 15 columnas .
 - **Variable objetivo:** `booking_complete`. Solo el **15 %** de las reservas se completa.
 - **Limitaciones:**
   - No trae fechas calendario. La dimensión temporal se representa con el día de la semana, la hora del vuelo y los días de anticipación.
@@ -55,9 +55,9 @@ Hacer un análisis exploratorio de datos (EDA) sobre un dataset de reservas de v
 
 ## Metodología
 
-El desarrollo completo está en [`tp1.ipynb`](tp1.ipynb), hecho en Python con pandas, numpy, matplotlib, seaborn y scipy.
+El desarrollo completo está en `tp1.ipynb`, hecho en Python con pandas, numpy, matplotlib, seaborn y scipy.
 
-1. **Carga:** lectura del CSV con codificación `ISO-8859-1`.
+1. **Carga:** lectura del CSV .
 2. **Limpieza:**
    - **Nulos:** no hay nulos explícitos. El valor `(not set)` en `booking_origin` (81 filas después de quitar duplicados) es un nulo encubierto, pero **no se reemplazó**: se mantiene como categoría y se documenta como limitación.
    - **Duplicados:** se eliminaron 420 filas idénticas (0,84 %).
@@ -69,7 +69,6 @@ El desarrollo completo está en [`tp1.ipynb`](tp1.ipynb), hecho en Python con pa
    - Por hipótesis: histogramas con KDE, boxplots, scatterplots, gráficos de barras y de líneas, y matriz de correlación.
    - La conversión se compara siempre como **tasa** (%), porque la variable objetivo está desbalanceada. Para comparar entre rutas o países se exigió un mínimo de reservas (20, 30 o 100, según el gráfico), porque con pocas reservas el porcentaje es inestable.
    - H4 se analizó **ruta por ruta**: solo rutas vendidas por ambos canales, comparando la mediana del costo por pasajero.
-4. **Pruebas estadísticas:** el notebook importa `scipy.stats`, pero hoy **no ejecuta** ninguna prueba (chi-cuadrado ni Wilcoxon). Las conclusiones se apoyan en tasas, gráficos y correlaciones (Spearman volumen vs conversión por país; Pearson en la matriz de correlación).
 
 ## Conclusiones y hallazgos relevantes
 
