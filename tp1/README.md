@@ -17,7 +17,7 @@ Hacer un análisis exploratorio de datos (EDA) sobre un dataset de reservas de v
 
 - **Archivo:** `customer_booking.csv`, con reservas de vuelos hechas por clientes de una aerolínea. Para cada reserva trae el detalle del viaje, los adicionales solicitados, el costo y si se completó.
 - **Fuente:** dataset público descargado de internet. <!-- TODO: completar con el link de origen y aclarar de dónde sale la columna booking_cost -->
-- **Tamaño:** 50.000 filas × 15 columnas (49.580 filas después de la limpieza).
+- **Tamaño:** 50.000 filas × 15 columnas (48.385 filas después de la limpieza).
 - **Variable objetivo:** `booking_complete`. Solo el **15 %** de las reservas se completa.
 - **Limitaciones:**
   - No trae fechas calendario. La dimensión temporal se representa con el día de la semana, la hora del vuelo y los días de anticipación.
@@ -59,14 +59,15 @@ El desarrollo completo está en [`tp1.ipynb`](tp1.ipynb), hecho en Python con pa
 
 1. **Carga:** lectura del CSV en UTF-8.
 2. **Limpieza:**
-   - **Nulos:** no hay nulos explícitos. El valor `(not set)` en `booking_origin` (84 filas) es un nulo encubierto y se reemplazó por `NaN`.
+   - **Nulos:** no hay nulos explícitos. El valor `(not set)` en `booking_origin` (81 filas) es un nulo encubierto y se reemplazó por `NaN`.
    - **Duplicados:** se eliminaron 420 filas idénticas (0,84 %).
+   - **Valores poco plausibles:** se eliminaron las compras con más de 365 días de anticipación (838) y las estadías de ida y vuelta de más de 180 días (370).
    - **Inconsistencias:** se validaron rangos y categorías (pasajeros > 0, horas de 0 a 23, binarias en 0/1, formato de ruta, etc.) y ninguna fila incumplió esas reglas. Se unificaron países duplicados o mal codificados: `Czechia`/`Czech Republic` y `R�union` → `Réunion`. En los viajes de solo ida la estadía se pasó a `NaN`, porque no tiene sentido. Se documentó una anomalía del dataset: `length_of_stay` no tiene valores entre 7 y 16 días.
    - **Tipos de datos:** las columnas de texto se convirtieron a `category` y `flight_day` a categoría ordenada.
 3. **Análisis exploratorio:**
    - Tipos de variables y distribución de cada variable numérica.
-   - Outliers con el criterio IQR (Tukey). Se conservaron porque son valores posibles, no errores. Los gráficos se recortan al percentil 99.
-   - Histogramas con KDE de la duración del vuelo y del costo por pasajero, que comparan reservas completadas y no completadas.
+   - Outliers con el criterio IQR (Tukey). Fuera de los casos poco plausibles eliminados en la limpieza, se conservaron porque son valores posibles, no errores. Los gráficos se recortan al percentil 99.
+   - Histogramas con KDE de la anticipación (H1) y de los extras (H2), comparando reservas completadas y no completadas, y del precio relativo por canal (H4).
    - Por hipótesis: histogramas con KDE, boxplots, scatterplots, gráficos de barras y de líneas, y matriz de correlación.
    - La conversión se compara siempre como **tasa** (%), porque la variable objetivo está desbalanceada. Para comparar entre rutas o países se exigió un mínimo de reservas (20, 30 o 100, según el gráfico), porque con pocas reservas el porcentaje es inestable.
    - H4 se analizó **ruta por ruta**: solo rutas vendidas por ambos canales, comparando la mediana del costo por pasajero.
@@ -76,21 +77,34 @@ El desarrollo completo está en [`tp1.ipynb`](tp1.ipynb), hecho en Python con pa
 
 ## Conclusiones y hallazgos relevantes
 
+### Insight de negocio
+
+**Australia es el mercado más grande y el que peor convierte: es la mayor oportunidad de crecimiento.**
+
+- Concentra el **36 %** de las reservas iniciadas, pero solo el **5,0 %** se completa, contra el **20,6 %** del resto
+  de los países (4 veces menos).
+- La caída es aún mayor en **Mobile**, donde Australia convierte apenas **1,4 %** (contra 5,3 % por Internet).
+
+**Impacto:** si Australia convirtiera como el promedio del resto de los países, se completarían **≈2.700 reservas más**
+con la misma demanda, **un 38 % más** que las ≈7.200 completadas hoy, sin invertir en atraer nuevos clientes.
+
+Acción en Australia para optimizar la conversión. Analizar en qué paso del proceso se abandona
+la reserva (precio final, medios de pago, experiencia en Mobile) y empezar por el canal Mobile, donde la brecha es mayor.
+
 | Hipótesis | Resultado | Evidencia principal |
 |---|---|---|
-| **H1** | ✅ Se cumple parcialmente (efecto chico) | Conversión de 17,5 % con 0-15 días de anticipación contra 13-14,5 % desde los 60 días, donde se estabiliza. Mediana de anticipación: 46 días en las completadas y 51 en las no completadas. Chi² significativo (p ≈ 5·10⁻¹⁴). |
-| **H2** | ✅ Se cumple | La conversión sube con cada extra: 10,7 % → 15,0 % → 16,0 % → 18,5 % (0 a 3 extras). El equipaje extra es el adicional más asociado (16,7 % contra 11,5 %). Chi² significativo. |
-| **H3** | ✅ Se cumple con claridad | La conversión va de 5,0 % (Australia) a 34,5 % (Malasia), y la diferencia se repite ruta por ruta. Chi² significativo (p ≈ 0). |
-| **H4** | ❌ Se rechaza | En la misma ruta, Mobile e Internet cobran prácticamente lo mismo (diferencia mediana +1,3 %). Mobile es **más caro** en 88 de 144 rutas. Wilcoxon p = 0,99. |
+| **H1** | ✅ Se cumple parcialmente (efecto chico) | Conversión de 17,5 % con 0-15 días de anticipación contra 12,9-14,6 % desde los 60 días, donde se estabiliza. El 37 % de las completadas se compró con menos de 30 días, contra el 33 % de las no completadas (mediana 45 vs 51 días). Chi² significativo (p ≈ 3·10⁻¹⁴). |
+| **H2** | ✅ Se cumple | La conversión sube con cada extra: 10,8 % → 15,0 % → 15,9 % → 18,6 % (0 a 3 extras). El equipaje extra es el adicional más asociado (16,7 % contra 11,6 %). Chi² significativo (p ≈ 7·10⁻⁵¹). |
+| **H3** | ✅ Se cumple con claridad | La conversión va de 5,0 % (Australia) a 34,7 % (Malasia), y la diferencia se repite ruta por ruta. Chi² significativo (p ≈ 0). |
+| **H4** | ❌ Se rechaza | En la misma ruta, Mobile e Internet cobran prácticamente lo mismo (diferencia mediana +1,0 %). Mobile es **más caro** en 82 de 140 rutas. Wilcoxon p = 0,99. |
 
 ### Hallazgos
 
-1. **El país de origen es el factor que más diferencia la conversión.** Australia es el mercado más grande (36 % de las reservas) y uno de los que peor convierte (5 %), mientras que Malasia convierte casi 7 veces más. Mejorar la conversión en Australia tendría el mayor impacto sobre el total.
+1. **El país de origen es el factor que más diferencia la conversión.** Australia es el mercado más grande (36 % de las reservas) y uno de los que peor convierte (5 %), mientras que Malasia convierte casi 7 veces más. Si Australia convirtiera como el promedio del resto de los países (20,6 %), se completarían ≈2.700 reservas más con la misma demanda, un 38 % más que las ≈7.200 completadas hoy. Es la mayor oportunidad del negocio.
 2. **Los adicionales están asociados a completar la reserva**, sobre todo el equipaje extra. Es una asociación, no necesariamente una causa: quien ya decidió viajar es quien más configura extras.
 3. **La anticipación influye poco.** Las compras de último momento convierten algo más, pero desde los 60 días la conversión se mantiene estable.
 4. **El canal no cambia el precio:** en la misma ruta, Mobile no es más barato que Internet.
-5. **Los vuelos largos convierten menos.** Los vuelos de más de 8 horas convierten 10,7 %, contra 18,5 % de los más cortos. Esto ayuda a explicar H3: Australia reserva sobre todo vuelos de ~9 h (mediana 8,6 h) y Malasia de ~6,6 h. Las reservas completadas también son levemente más baratas (mediana del costo por pasajero 670 contra 701).
-6. Ninguna variable numérica por sí sola tiene una correlación fuerte con completar la reserva (todas por debajo de 0,15 en valor absoluto). La conversión depende de una combinación de factores.
+5. Ninguna variable numérica por sí sola tiene una correlación fuerte con completar la reserva (todas por debajo de 0,15 en valor absoluto). La conversión depende de una combinación de factores.
 
 ### Limitaciones
 
